@@ -1,0 +1,39 @@
+{
+    "variants": {
+        "main": {
+            "system": {
+                "enable": [
+                    "flatpak-nuke-fedora.service",
+                    "flatpak-preinstall.service",
+                    "input-remapper.service",
+                    "tailscaled.service"
+                ],
+                "disable": []
+            },
+            "user": {
+                "enable": ["syncthing@.service"],
+                "disable": []
+            }
+        },
+        "gnome": {
+            "system": {
+                "enable": ["dconf-update.service"],
+                "disable": []
+            },
+            "user": {
+                "enable": [],
+                "disable": []
+            }
+        },
+        "kde": {
+            "system": {
+                "enable": [],
+                "disable": []
+            },
+            "user": {
+                "enable": [],
+                "disable": []
+            }
+        }
+    }
+}

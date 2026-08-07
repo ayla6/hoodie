@@ -49,7 +49,10 @@ LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 # BUILD PROCESS
 ###############################################################################
 # 01-kernel swaps in the CachyOS kernel and signs it for Secure Boot.
-RUN --mount=type=cache,dst=/var/cache/dnf \
+# The optional `mokkey` secret is the stable MOK private key; without it a
+# fresh keypair is generated for the build.
+RUN --mount=type=secret,id=mokkey,required=false \
+    --mount=type=cache,dst=/var/cache/dnf \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \

@@ -113,6 +113,12 @@ build target_image=image_name tag=default_tag flavor=image_flavor:
     BUILD_ARGS+=("--build-arg" "IMAGE_FLAVOR={{ flavor }}")
     BUILD_ARGS+=("--build-arg" "BASE_IMAGE=${BASE_IMAGE}")
 
+    # Pass the stable MOK private key if available so the kernel + NVIDIA kmod
+    # stay signed by the same key across rebuilds (no re-enrollment churn).
+    if [[ -n "${MOK_PRIVATE_KEY_PATH:-}" ]] && [[ -f "${MOK_PRIVATE_KEY_PATH}" ]]; then
+        BUILD_ARGS+=("--secret" "id=mokkey,src=${MOK_PRIVATE_KEY_PATH}")
+    fi
+
     echo "Building image: ${FINAL_IMAGE}:{{ tag }} (flavor: {{ flavor }}, base: ${BASE_IMAGE})"
 
     podman build \

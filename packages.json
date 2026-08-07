@@ -1,0 +1,56 @@
+{
+    "variants": {
+        "main": {
+            "include": [
+                "bees",
+                "dbus-x11",
+                "distrobox",
+                "fcitx5",
+                "fcitx5-chewing",
+                "fcitx5-chinese-addons",
+                "fcitx5-configtool",
+                "fcitx5-gtk",
+                "fcitx5-hangul",
+                "fcitx5-m17n",
+                "fcitx5-qt",
+                "fcitx5-unikey",
+                "fish",
+                "flatpak-spawn",
+                "fzf",
+                "gamescope",
+                "git",
+                "glx-utils",
+                "htop",
+                "input-remapper",
+                "input-remapper-gtk",
+                "just",
+                "mangohud",
+                "neovim",
+                "pciutils",
+                "syncthing",
+                "tmux",
+                "umu-launcher",
+                "vkBasalt",
+                "vulkan-tools",
+                "wl-clipboard",
+                "xdg-user-dirs",
+                "xorg-x11-server-utils",
+                "zram-generator"
+            ],
+            "exclude": []
+        },
+        "gnome": {
+            "include": [
+                "dconf-editor",
+                "gnome-tweaks"
+            ],
+            "exclude": []
+        },
+        "kde": {
+            "include": [
+                "kcm-fcitx5"
+            ],
+            "exclude": []
+        }
+    }
+}
