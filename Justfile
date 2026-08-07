@@ -1,5 +1,5 @@
 set dotenv-filename := "hoodie.env"
-set dotenv-load
+set dotenv-load := true
 
 export image_name := env("IMAGE_NAME", "hoodie")
 export image_flavor := env("IMAGE_FLAVOR", "gnome")
@@ -10,6 +10,7 @@ export qemu_image := env("QEMU_IMAGE", "docker.io/qemux/qemu:latest")
 
 # Construct the full image name with flavor suffix
 # gnome is the primary image (no suffix), kde gets "-kde"
+
 [private]
 _image_suffix := if image_flavor == "gnome" { "" } else { "-" + image_flavor }
 [private]
@@ -82,7 +83,8 @@ sudoif command *args:
 # Build the image for the given flavor.
 # Usage:
 #   just build                      # hoodie:stable (gnome)
-#   just build hoodie stable kde    # hoodie-kde:stable
+
+# just build hoodie stable kde    # hoodie-kde:stable
 build target_image=image_name tag=default_tag flavor=image_flavor:
     #!/usr/bin/env bash
 
@@ -229,7 +231,8 @@ full-image-name $target_image=image_name $flavor=image_flavor:
 
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
-#              If the image is found, it loads it into rootful podman. If the image is not found, it pulls it from the repository.
+
+# If the image is found, it loads it into rootful podman. If the image is not found, it pulls it from the repository.
 _rootful_load_image $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
@@ -314,7 +317,8 @@ _rebuild-bib $target_image $tag $type $config: (build target_image tag) && (_bui
 # Usage: just build-qcow2 [target_image] [tag] [flavor]
 # Examples:
 #   just build-qcow2                        # builds hoodie:stable (gnome)
-#   just build-qcow2 hoodie stable kde      # builds hoodie-kde:stable
+
+# just build-qcow2 hoodie stable kde      # builds hoodie-kde:stable
 [group('Build Virtal Machine Image')]
 build-qcow2 target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "qcow2" "iso/disk.toml")
 
@@ -381,6 +385,7 @@ _run-vm $target_image $tag $type $config:
     podman run "${run_args[@]}"
 
 # Run a virtual machine from a QCOW2 image
+
 # Usage: just run-vm-qcow2 [target_image] [tag] [flavor]
 [group('Run Virtal Machine')]
 run-vm-qcow2 target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: && (_run-vm target_image tag "qcow2" "iso/disk.toml")
