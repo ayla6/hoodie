@@ -1,5 +1,12 @@
+# Local signing keys (never commit)
 cosign.key
+cosign.pub
+
+# Build artifacts
 _build_*
 output
 _build-*/**
 *_chunkah_*
+
+# Reference repos
+references
