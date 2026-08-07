@@ -1,4 +1,3 @@
----
 name: Build container image
 on:
   pull_request:
@@ -15,15 +14,21 @@ on:
 
 env:
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
+  DEFAULT_TAG: "stable"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   build_push:
-    name: Build and push image
+    name: Build and push (${{ matrix.flavor }})
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [gnome, kde]
 
     permissions:
       contents: read
@@ -39,12 +44,24 @@ jobs:
         uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
 
       - name: Install just
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 #v4.0.0
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
 
       - name: Check Just Syntax
         shell: bash
         run: |
           just check
+
+      - name: Prepare MOK key
+        env:
+          MOK_PRIVATE_KEY: ${{ secrets.MOK_PRIVATE_KEY }}
+        run: |
+          if [[ -n "${MOK_PRIVATE_KEY}" ]]; then
+            printf '%s\n' "${MOK_PRIVATE_KEY}" > /tmp/mok.key
+            chmod 600 /tmp/mok.key
+            echo "MOK_PRIVATE_KEY_PATH=/tmp/mok.key" >> "${GITHUB_ENV}"
+          else
+            echo "::warning::MOK_PRIVATE_KEY secret not set; the kernel will be signed with a freshly generated build key."
+          fi
 
       - name: Image Name
         id: image-name
@@ -65,6 +82,8 @@ jobs:
           # Lowercase the image uri https://github.com/macbre/push-to-ghcr/issues/12
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_FLAVOR=${{ matrix.flavor }}" >> ${GITHUB_ENV}
+          echo "FULL_IMAGE_NAME=$(just full-image-name ${IMAGE_NAME} ${{ matrix.flavor }})" >> ${GITHUB_ENV}
 
       # This actually builds the container image
       - name: Build Image
@@ -72,31 +91,21 @@ jobs:
         run: |
           sudo -E $(command -v just) build \
             ${IMAGE_NAME} \
-            ${DEFAULT_TAG}
+            ${DEFAULT_TAG} \
+            ${IMAGE_FLAVOR}
 
-      # This is optional, this provides smaller delta updates
-      - name: Rechunk with rpm-ostree
+      - name: Rechunk with Chunkah
         id: rechunk
         run: |
-          sudo -E $(command -v just) ostree-rechunk \
-            ${IMAGE_NAME} \
+          sudo -E $(command -v just) rechunk \
+            ${FULL_IMAGE_NAME} \
             ${DEFAULT_TAG}
-
-      # If you are feeling adventurous, use the new distro agnostic rechunker
-      # https://github.com/coreos/chunkah
-      # You can delete the Rechunk with rpm-ostree portion then if you use this
-      #- name: Rechunk with Chunkah
-      #  id: rechunk
-      #  run: |
-      #    sudo -E $(command -v just) rechunk \
-      #      ${IMAGE_NAME} \
-      #      ${DEFAULT_TAG}
 
       - name: Generate Build Tags
         id: gen-build-tags
         run: |
           alias_tags="$(just generate-build-tags \
-                        ${IMAGE_NAME} \
+                        ${FULL_IMAGE_NAME} \
                         ${DEFAULT_TAG})"
 
           echo "Tags for this Action..."
@@ -109,7 +118,7 @@ jobs:
           ALIAS_TAGS: ${{ steps.gen-build-tags.outputs.alias_tags }}
         run: |
           sudo -E $(command -v just) tag-images \
-            "${IMAGE_NAME}" \
+            "${FULL_IMAGE_NAME}" \
             "${DEFAULT_TAG}" \
             "${ALIAS_TAGS}"
 
@@ -131,34 +140,30 @@ jobs:
         run: |
           set -euox pipefail
           for tag in ${ALIAS_TAGS}; do
-            sudo -E podman push --digestfile=/tmp/digestfile ${IMAGE_NAME}:${tag} ${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}
+            sudo -E podman push --digestfile=/tmp/digestfile ${FULL_IMAGE_NAME}:${tag} ${IMAGE_REGISTRY}/${FULL_IMAGE_NAME}:${tag}
           done
 
           digest=$(< /tmp/digestfile)
 
           echo "digest=${digest}" >> $GITHUB_OUTPUT
 
-      # This section is optional and only needs to be enabled if you plan on distributing
-      # your project for others to consume. You will need to create a public and private key
-      # using Cosign and save the private key as a repository secret in Github for this workflow
-      # to consume. For more details, review the image signing section of the README.
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         with:
-          # be careful when upgrading major versions
-          cosign-release: 'v3.1.2'
+          # 2.6.x writes tag-based `.sig` attachments; cosign 3.x defaults to
+          # OCI 1.1 referrers which Fedora 44's containers/image stack does not
+          # read yet (rpm-ostree fails with "no signature exists").
+          cosign-release: 'v2.6.4'
 
       - name: Sign container image
         id: sign-image
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         env:
-          COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
           DIGEST: ${{ steps.push-image.outputs.digest }}
         run: |
-          # https://github.com/containers/container-libs/issues/388
-          # https://github.com/coreos/rpm-ostree/issues/5509
-          # use old bundle format, so we can use newer cosign 3.X.X instead of 2.X.X
-          cosign sign -y --new-bundle-format=false --use-signing-config=false --key env://COSIGN_PRIVATE_KEY ${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}
-
+          printf '%s\n' "${COSIGN_PRIVATE_KEY}" > /tmp/cosign.key
+          chmod 600 /tmp/cosign.key
+          trap 'shred -u /tmp/cosign.key 2>/dev/null || rm -f /tmp/cosign.key' EXIT
+          cosign sign -y --key /tmp/cosign.key ${IMAGE_REGISTRY}/${FULL_IMAGE_NAME}@${DIGEST}

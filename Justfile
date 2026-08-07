@@ -215,6 +215,18 @@ image_name $target_image=image_name:
 
     echo "${image_name}"
 
+# Full image name for a flavor (gnome -> hoodie, kde -> hoodie-kde)
+[group('Utility')]
+full-image-name $target_image=image_name $flavor=image_flavor:
+    #!/usr/bin/env bash
+    set -eoux pipefail
+
+    if [[ "{{ flavor }}" == "gnome" ]]; then
+        echo "{{ target_image }}"
+    else
+        echo "{{ target_image }}-{{ flavor }}"
+    fi
+
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
 #              If the image is found, it loads it into rootful podman. If the image is not found, it pulls it from the repository.

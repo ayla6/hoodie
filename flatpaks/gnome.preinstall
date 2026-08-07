@@ -1,0 +1,3 @@
+# GNOME-only apps, preinstalled on first boot by flatpak-preinstall.service
+com.mattjakeman.ExtensionManager
+io.github.realmazharhussain.GdmSettings
