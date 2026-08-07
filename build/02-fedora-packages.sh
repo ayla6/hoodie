@@ -14,10 +14,14 @@ echo "::group:: Set Up Repositories"
 
 # negativo17 fedora-multimedia for fuller codec coverage. priority=90 outranks
 # Fedora's default (99); higher-priority versions auto-win during install.
+# nvidia-* is excluded so the legacy 580xx driver (build/04-nvidia.sh) resolves
+# from rpmfusion-nonfree instead of negativo's current 610 series, whose
+# nvidia-driver-common would file-conflict with the 580xx packages.
 dnf5 config-manager addrepo \
     --from-repofile="https://negativo17.org/repos/fedora-multimedia.repo" || true
 dnf5 config-manager setopt fedora-multimedia.priority=90
 dnf5 config-manager setopt fedora-multimedia.enabled=1
+dnf5 config-manager setopt fedora-multimedia.exclude="nvidia-*"
 
 # ublue-os/packages COPR provides the just framework and system helpers.
 dnf5 -y copr enable ublue-os/packages
