@@ -24,6 +24,12 @@ echo "::endgroup::"
 
 echo "::group:: Swap Kernel to CachyOS"
 
+# Workaround for coreos/rpm-ostree#5578: `rpm-ostree kernel-install add`
+# runs dracut before depmod, so a freshly-installed third-party kernel has
+# no modules.dep and dracut fails. Symlinking 50-depmod.install to a name
+# that sorts before 05-rpmostree.install makes depmod run first.
+ln -s 50-depmod.install /usr/lib/kernel/install.d/01-depmod.install
+
 # Same override-replace flow the COPR documents for Silverblue. The stock
 # kernel packages are removed and replaced by the CachyOS ones, matched
 # -devel provides the headers the NVIDIA akmod needs.
