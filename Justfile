@@ -407,8 +407,8 @@ lint:
         echo "shellcheck could not be found. Please install it."
         exit 1
     fi
-    # Run shellcheck on all Bash scripts
-    find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
+    # Run shellcheck on all Bash scripts, excluding vendored references
+    find . -not -path "./references/*" -iname "*.sh" -type f -exec shellcheck "{}" ';'
 
 # Runs shfmt on all Bash scripts
 format:
@@ -419,5 +419,5 @@ format:
         echo "shfmt could not be found. Please install it."
         exit 1
     fi
-    # Run shfmt on all Bash scripts
-    find . -iname "*.sh" -type f -exec shfmt --write "{}" ';'
+    # Run shfmt on all Bash scripts, excluding vendored references
+    find . -not -path "./references/*" -iname "*.sh" -type f -exec shfmt --write "{}" ';'

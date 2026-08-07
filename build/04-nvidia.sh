@@ -27,7 +27,7 @@ echo "::group:: Install NVIDIA 580xx Driver"
 # Pick the CachyOS kernel explicitly: the base image can still carry stock
 # module dirs (e.g. 7.1.6-201), and plain `ls | head -1` is sort-order
 # dependent. We only ever sign/build against the CachyOS kernel from 01.
-KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
+KERNEL_VERSION=$(basename "$(find /usr/lib/modules -maxdepth 1 -type d -name '*cachyos*' | sort | head -1)")
 echo "Building NVIDIA kmod for kernel: ${KERNEL_VERSION}"
 
 # akmods must be installed with its scriptlets running so its %pre creates the

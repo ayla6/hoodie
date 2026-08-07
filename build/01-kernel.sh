@@ -78,7 +78,7 @@ dnf5 versionlock add \
 
 # Pick the CachyOS kernel explicitly; stock module dirs may linger in the
 # base image and plain `ls | head -1` is sort-order dependent.
-KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
+KERNEL_VERSION=$(basename "$(find /usr/lib/modules -maxdepth 1 -type d -name '*cachyos*' | sort | head -1)")
 echo "Active kernel: ${KERNEL_VERSION}"
 
 # The kernel-install hooks were bypassed, so build the initramfs manually in
@@ -141,6 +141,12 @@ fi
 openssl x509 -inform DER \
     -in "${MOK_CERT_DER}" \
     -out "${MOK_CERT_PEM}"
+
+# Alias our cert to ublue's expected path so their stock
+# `enroll-secure-boot-key` ujust recipe (which imports
+# /etc/pki/akmods/certs/akmods-ublue.der) enrolls the hoodie key.
+cp "${MOK_CERT_DER}" /etc/pki/akmods/certs/akmods-ublue.der
+chmod 644 /etc/pki/akmods/certs/akmods-ublue.der
 
 chmod 600 "${MOK_PRIVKEY}"
 chmod 644 "${MOK_CERT_DER}"

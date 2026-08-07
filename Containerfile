@@ -79,7 +79,15 @@ RUN --mount=type=cache,dst=/var/cache/dnf \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
     /ctx/build/04-nvidia.sh
 
-# 05-copy-files stages variant overlays, ujust recipes, and flatpak preinstalls.
+# 07-homebrew imports the brew system files. Kept below the package/kernel
+# layers (stable) and ABOVE 05-copy-files so our custom overlays are staged
+# last and win any filename clash with brew's system files.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    /ctx/build/07-homebrew.sh
+
+# 05-copy-files stages variant overlays, ujust recipes, and flatpak
+# preinstalls. It lives near the top of the layer stack so editing files/,
+# ujust/, or flatpaks/ only rebuilds the outermost layers -> smaller diffs.
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
     /ctx/build/05-copy-files.sh
@@ -88,9 +96,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
     /ctx/build/06-systemd.sh
-
-RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
-    /ctx/build/07-homebrew.sh
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \

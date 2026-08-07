@@ -20,7 +20,8 @@ gaming and development tooling.
   ublue's own base-image build) and signed with the hoodie MOK key.
 - **Secure Boot**: the kernel is `sbsign`ed and the NVIDIA module is
   `kmodsign`ed with the same key (`/etc/pki/akmods/`). Enroll once with
-  `ujust enroll-secure-boot-key`. The private key is never shipped in the
+  `ujust enroll-secure-boot-key` (imports our cert aliased to
+  `akmods-ublue.der`; password `universalblue`). The private key is never shipped in the
   image; builds pass it as the `mokkey` build secret. The public key lives in
   the repo as [`secure_boot.der`](secure_boot.der) — enroll it before
   installation with:

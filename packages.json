@@ -18,17 +18,20 @@
                 "fcitx5-m17n",
                 "fcitx5-qt",
                 "fcitx5-unikey",
+                "fcitx5-autostart",
                 "fish",
                 "flatpak-spawn",
                 "fzf",
                 "gamescope",
                 "gamemode",
                 "git",
+                "git-credential-libsecret",
                 "htop",
                 "input-remapper",
                 "input-remapper-gtk",
                 "just",
                 "jq",
+                "libdrm-tests",
                 "mangohud",
                 "neovim",
                 "pciutils",
@@ -40,11 +43,13 @@
                 "syncthing",
                 "tmux",
                 "uupd",
+                "uutils-coreutils",
                 "vkBasalt",
                 "vulkan-tools",
                 "wget",
                 "wl-clipboard",
                 "xdg-user-dirs",
+                "zoxide",
                 "zram-generator"
             ],
             "exclude": []
@@ -52,6 +57,7 @@
         "gnome": {
             "include": [
                 "dconf-editor",
+                "foot",
                 "gnome-tweaks"
             ],
             "exclude": ["gnome-software"]

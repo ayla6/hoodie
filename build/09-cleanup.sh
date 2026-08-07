@@ -37,6 +37,14 @@ if [[ -d /var/run ]] && [[ ! -L /var/run ]]; then
     ln -sf /run /var/run
 fi
 
+# Convenience /data -> /var/data symlink. Baked in even though /var/data only
+# exists at runtime (a dangling link is harmless and resolves once the dir is
+# created); /var lives on the writable partition so the link target survives.
+if [[ ! -e /data ]]; then
+    echo "Creating /data -> /var/data symlink"
+    ln -s /var/data /data
+fi
+
 # Clean up /var and /run content created during build.
 echo "Cleaning up temporary build artifacts..."
 rm -rf /var/lib/dnf

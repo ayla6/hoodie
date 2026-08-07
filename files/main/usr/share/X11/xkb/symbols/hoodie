@@ -10,7 +10,7 @@
 //   top:   q:% w:! f:+ p:[ b:@  j:# l:] u:_ y:? ;:^
 //   home:  a:/ s:= t:{ g:$  m:\ n:} e:" i:; o:-
 //   bottom:z:# x:` c:* v:( \:& ,:| .:) /:<
-//   disabled (AltGr+key does nothing): physical y, h, n, m
+//   disabled (AltGr+key does nothing): physical n, m, [, ]
 //
 // Accent layer (colemak letter -> output):
 //   a:á e:é i:í o:ó u:ú c:ç n:ñ s:ß f:ã
@@ -81,8 +81,8 @@ xkb_symbols "basic" {
     key <AB04> { [         v,         V,  parenleft,  parenleft,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
     key <AB05> { [ backslash,       bar,  ampersand,  ampersand,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
     key <AB06> { [numbersign, asciitilde,   NoSymbol,   NoSymbol,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
-    key <AB07> { [         h,         H,   NoSymbol,   NoSymbol,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
-    key <AB08> { [     comma,      less,        bar,        bar,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
-    key <AB09> { [    period,   greater, parenright, parenright,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
-    key <AB10> { [     slash,  question,      less,      less, dead_cedilla, dead_cedilla, NoSymbol, NoSymbol ] };
+    key <AB07> { [         k,         K,   NoSymbol,   NoSymbol,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
+    key <AB08> { [         h,         H,        bar,        bar,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
+    key <AB09> { [     comma,      less, parenright, parenright,   NoSymbol,   NoSymbol, NoSymbol, NoSymbol ] };
+    key <AB10> { [    period,   greater,      less,      less, dead_cedilla, dead_cedilla, NoSymbol, NoSymbol ] };
 };

@@ -33,7 +33,9 @@ services.json`, and `just check`.
   secret). Without it, a fresh key is generated (re-enrollment needed). The
   public cert is committed as `secure_boot.der` (repo root); the private key
   (`secure_boot.key`) and `cosign.key` are gitignored — never commit them.
-  Enroll on hardware with `ujust enroll-secure-boot-key` (password `hoodie`).
+  Enroll on hardware with `ujust enroll-secure-boot-key` (ublue's stock
+  recipe; hoodie aliases its cert to `akmods-ublue.der` — password
+  `universalblue`).
 - **Versionlocks**: mesa/libva/ffmpeg-ish codecs are distro-synced and locked
   in `build/02-fedora-packages.sh` so the CachyOS kernel's userland matches.
 - **NVIDIA is Maxwell (MX130)** → the R580 final legacy driver
