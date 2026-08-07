@@ -60,7 +60,9 @@ akmods --force --kernels "${KERNEL_VERSION}"
 
 # kmodtool strips "-kmod" from the akmod name, so the modules land in
 # extra/nvidia-580xx/ (not extra/nvidia/) even though the binary is nvidia.ko.
-NVIDIA_MODULE="/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia-580xx/nvidia.ko"
+# The CachyOS kernel enables CONFIG_MODULE_COMPRESS_XZ, so the built modules
+# are shipped (and installed) as nvidia.ko.xz.
+NVIDIA_MODULE="/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia-580xx/nvidia.ko.xz"
 if [[ ! -f "${NVIDIA_MODULE}" ]]; then
     echo "ERROR: akmods did not produce ${NVIDIA_MODULE}" >&2
     ls -la "/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia-580xx/" || true
