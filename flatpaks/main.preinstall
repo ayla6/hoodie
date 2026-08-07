@@ -1,0 +1,22 @@
+# Flathub apps preinstalled on first boot by flatpak-preinstall.service
+# Communication
+org.signal.Signal
+org.telegram.desktop
+com.discordapp.Discord
+
+# Media & content
+org.mozilla.firefox
+com.spotify.Client
+com.obsproject.Studio
+org.videolan.VLC
+io.mpv.Mpv
+
+# Creation
+org.blender.Blender
+org.gimp.GIMP
+org.kde.kdenlive
+
+# Utilities
+com.github.tchx84.Flatseal
+com.mattjakeman.ExtensionManager
+io.github.realmazharhussain.GdmSettings

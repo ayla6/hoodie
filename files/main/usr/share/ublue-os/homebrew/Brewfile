@@ -1,0 +1,21 @@
+# Homebrew CLI tools for hoodie
+# Install with: ujust brew-bundle
+tap "homebrew/core"
+
+brew "bat"
+brew "broot"
+brew "difftastic"
+brew "duf"
+brew "dust"
+brew "eza"
+brew "fd"
+brew "fisher"
+brew "gh"
+brew "git-delta"
+brew "jq"
+brew "lazygit"
+brew "ripgrep"
+brew "starship"
+brew "tokei"
+brew "yq"
+brew "zoxide"
