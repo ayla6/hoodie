@@ -1,6 +1,6 @@
 # Private signing keys (never commit)
 cosign.key
-mok.key
+secure_boot.key
 
 # Build artifacts
 _build_*

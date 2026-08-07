@@ -29,9 +29,11 @@ services.json`, and `just check`.
 - **MOK keys**: the kernel is `sbsign`ed and NVIDIA kmod `kmodsign`ed in the
   image with keys under `/etc/pki/akmods/`. Builds receive the stable private
   key via the `mokkey` build secret (`--secret id=mokkey,src=<file>` /
-  `MOK_PRIVATE_KEY_PATH`). Without it, a fresh key is generated (re-enrollment
-  needed). Never add private keys to the repo; `cosign.key`/`cosign.pub` are
-  gitignored.
+  `MOK_PRIVATE_KEY_PATH`, stored as the `MOK_PRIVATE_KEY` GitHub Actions
+  secret). Without it, a fresh key is generated (re-enrollment needed). The
+  public cert is committed as `secure_boot.der` (repo root); the private key
+  (`secure_boot.key`) and `cosign.key` are gitignored — never commit them.
+  Enroll on hardware with `ujust enroll-secure-boot-key` (password `hoodie`).
 - **Versionlocks**: mesa/libva/ffmpeg-ish codecs are distro-synced and locked
   in `build/02-fedora-packages.sh` so the CachyOS kernel's userland matches.
 - **NVIDIA is Maxwell (MX130)** → the R580 final legacy driver

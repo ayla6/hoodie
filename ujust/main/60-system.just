@@ -32,10 +32,10 @@ enable-beesd:
     echo "beesd timers enabled."
 
 # Enroll the hoodie Secure Boot MOK key (needed once to boot the
-
-# self-signed CachyOS kernel and load the signed NVIDIA module)
+# self-signed CachyOS kernel and load the signed NVIDIA module).
+# Enter the password "hoodie" if prompted.
 [group("System")]
-enroll-hoodie-mok:
+enroll-secure-boot-key:
     #!/usr/bin/bash
     if [[ -f /etc/pki/akmods/certs/public_key.der ]]; then
         sudo mokutil --import /etc/pki/akmods/certs/public_key.der

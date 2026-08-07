@@ -19,8 +19,17 @@ gaming and development tooling.
   override` and signed with the hoodie MOK key.
 - **Secure Boot**: the kernel is `sbsign`ed and the NVIDIA module is
   `kmodsign`ed with the same key (`/etc/pki/akmods/`). Enroll once with
-  `ujust enroll-hoodie-mok`. The private key is never shipped in the image;
-  builds pass it as the `mokkey` build secret.
+  `ujust enroll-secure-boot-key`. The private key is never shipped in the
+  image; builds pass it as the `mokkey` build secret. The public key lives in
+  the repo as [`secure_boot.der`](secure_boot.der) — enroll it before
+  installation with:
+
+  ```sh
+  sudo mokutil --timeout -1
+  sudo mokutil --import secure_boot.der
+  ```
+
+  Enter `hoodie` if prompted for a password.
 - **NVIDIA 580xx** (Maxwell) driver with power management, Flatpak runtime sync,
   and a legacy-hardware helper.
 - **Gaming**: Steam, gamescope Wayland session, mangohud, vkBasalt,
@@ -62,7 +71,7 @@ Requirements: podman (5+), just, and optionally a MOK private key file.
 ```sh
 just build            # hoodie:stable (gnome)
 just build hoodie stable kde   # hoodie-kde:stable
-MOK_PRIVATE_KEY_PATH=/path/to/private_key.pem just build
+MOK_PRIVATE_KEY_PATH=./secure_boot.key just build
 ```
 
 To test inside a VM or produce install media, see `just --list` for
