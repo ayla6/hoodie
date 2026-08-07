@@ -44,4 +44,51 @@ done
 
 echo "::endgroup::"
 
+echo "::group:: Register Custom XKB Layout"
+
+# Register the hoodie layout (symbols/hoodie) so GNOME/KDE can select it.
+# Inject at build time so the entry tracks the xkeyboard-config version in
+# the base image. Files with the name changed by a future include would
+# otherwise be clobbered.
+if [[ -f /usr/share/X11/xkb/symbols/hoodie ]]; then
+    for rules in /usr/share/X11/xkb/rules/evdev.xml /usr/share/X11/xkb/rules/base.xml; do
+        if [[ -f "${rules}" ]]; then
+            python3 - "${rules}" <<'PYEOF'
+import sys
+
+path = sys.argv[1]
+entry = """    <layout>
+      <configItem>
+        <name>hoodie</name>
+        <shortDescription>en</shortDescription>
+        <description>English (Colemak-DH Wide ISO Symbols)</description>
+        <languageList>
+          <iso639Id>eng</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList/>
+    </layout>
+"""
+with open(path) as fh:
+    content = fh.read()
+if "<name>hoodie</name>" in content:
+    print(f"{path}: hoodie already registered")
+    sys.exit(0)
+marker = "  </layoutList>"
+if marker not in content:
+    print(f"{path}: </layoutList> marker not found", file=sys.stderr)
+    sys.exit(1)
+content = content.replace(marker, entry + marker)
+with open(path, "w") as fh:
+    fh.write(content)
+print(f"{path}: registered hoodie layout")
+PYEOF
+        fi
+    done
+else
+    echo "Symbols file missing; skipping XKB registration"
+fi
+
+echo "::endgroup::"
+
 echo "Custom file staging complete!"

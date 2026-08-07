@@ -1,5 +1,3 @@
 [org/gnome/desktop/input-sources]
-# Colemak-DH Wide ISO is the default layout; the stock layout already ships
-# the AltGr accent layer (á é í ó ú ã õ ç ñ ß + dead keys) from colemak_base.
-sources=[('xkb', 'us(colemak_dh_wide_iso)')]
-xkb-options=['lv3:ralt_switch']
+# hoodie layout: Colemak-DH Wide base, AltGr = symbols, Menu = accents.
+sources=[('xkb', 'hoodie')]

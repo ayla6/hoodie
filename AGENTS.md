@@ -44,6 +44,15 @@ services.json`, and `just check`.
   preinstalls live at `flatpaks/<variant>.preinstall`.
 - **Images tags**: gnome ships unsuffixed (`hoodie:stable`), kde as
   `hoodie-kde:stable` — set via `IMAGE_FLAVOR`.
+- **Custom XKB layout** (`files/main/usr/share/X11/xkb/symbols/hoodie`):
+  Colemak-DH Wide base, AltGr = symbols layer, Menu = accent layer
+  (`ISO_Level5_Shift`). Registered into `evdev.xml`/`base.xml` at build time
+  in `build/05-copy-files.sh` (injected before `</layoutList>`). Gotcha: in
+  XKB symbol merging, `NoSymbol` means "keep the earlier value" — to truly
+  blank a level that a `include` filled, the key's redefinition must have a
+  real symbol on a level past the included key's length, or nothing after the
+  last real symbol. Validate edits by compiling a keymap with
+  `xkbcomp -I... -xkb` and inspecting the level tables.
 - **CachyOS swap**: done in `build/01-kernel.sh` via `rpm-ostree override
   remove kernel* --install kernel-cachyos ... --devel-matched`; the
   `-devel-matched` package is the akmod compile target. Must run before
