@@ -11,16 +11,23 @@ set -eoux pipefail
 # 01-kernel.sh so Secure Boot stays functional.
 ###############################################################################
 
-echo "::group:: Ensure rpmfusion-nonfree"
+echo "::group:: Enable rpmfusion-nonfree"
 
-# ublue bases ship rpmfusion; make sure the nonfree repo is enabled.
-dnf5 config-manager setopt rpmfusion-nonfree.enabled=1
+# ublue main bases don't ship rpmfusion at all; install the release package so
+# the 580xx driver and kmod source can resolve. rpmfusion-nonfree-release no
+# longer requires free (rpmfusion commit "Drop dependency on free from
+# nonfree"), so the nonfree repo alone is enough for the NVIDIA packages.
+dnf5 -y install \
+    "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
 
 echo "::endgroup::"
 
 echo "::group:: Install NVIDIA 580xx Driver"
 
-KERNEL_VERSION=$(ls -d /usr/lib/modules/[0-9]* | head -1 | xargs basename)
+# Pick the CachyOS kernel explicitly: the base image can still carry stock
+# module dirs (e.g. 7.1.6-201), and plain `ls | head -1` is sort-order
+# dependent. We only ever sign/build against the CachyOS kernel from 01.
+KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
 echo "Building NVIDIA kmod for kernel: ${KERNEL_VERSION}"
 
 # akmod-nvidia-580xx pulls in akmods + the kmod source; the xorg driver is

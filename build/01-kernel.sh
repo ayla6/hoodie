@@ -43,7 +43,9 @@ rpm-ostree override remove \
     --install kernel-cachyos-devel \
     --install kernel-cachyos-devel-matched
 
-KERNEL_VERSION=$(ls -d /usr/lib/modules/[0-9]* | head -1 | xargs basename)
+# Pick the CachyOS kernel explicitly; stock module dirs may linger in the
+# base image and plain `ls | head -1` is sort-order dependent.
+KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
 echo "Active kernel: ${KERNEL_VERSION}"
 
 echo "::endgroup::"
