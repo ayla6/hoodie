@@ -1,6 +1,6 @@
-# Local signing keys (never commit)
+# Private signing keys (never commit)
 cosign.key
-cosign.pub
+mok.key
 
 # Build artifacts
 _build_*
