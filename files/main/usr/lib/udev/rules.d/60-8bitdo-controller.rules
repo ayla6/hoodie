@@ -1,0 +1,4 @@
+# 8BitDo wireless controllers (vendor 0x2dc8)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2dc8", TAG+="uaccess", TAG+="seat"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2dc8", TAG+="uaccess", TAG+="seat"
+SUBSYSTEM=="input", ATTRS{idVendor}=="2dc8", MODE="0660", GROUP="input", TAG+="uaccess"

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Gamescope
+Comment=Launch Steam in a Gamescope gaming session
+Exec=/usr/bin/gamescope -e -- /usr/bin/steam -tenfoot
+Type=Application
+StartupWMClass=gamescope

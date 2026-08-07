@@ -1,0 +1,14 @@
+[Unit]
+Description=Preinstall Flatpaks
+ConditionPathExists=/usr/share/flatpak/preinstall.d
+ConditionPathExists=/run/ostree-booted
+After=network-online.target flatpak-system-helper.service flatpak-nuke-fedora.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flatpak preinstall --system
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
