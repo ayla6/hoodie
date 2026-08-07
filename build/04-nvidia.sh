@@ -35,6 +35,15 @@ echo "Building NVIDIA kmod for kernel: ${KERNEL_VERSION}"
 # below drops privileges to that user via runuser.
 dnf5 -y install akmods
 
+# The kmod build (akmodsbuild -> rpmbuild) drops to the `akmods` user, which
+# must be able to read the MOK private key seeded in 01-kernel.sh. Without this
+# the signing guard in /etc/rpm/macros.kmodtool still passes but brp-kmodsign
+# fails, leaving the kmod unsigned.
+chgrp -R akmods /etc/pki/akmods
+chmod 750 /etc/pki/akmods /etc/pki/akmods/private /etc/pki/akmods/certs
+chmod 640 /etc/pki/akmods/private/private_key.priv
+chmod 644 /etc/pki/akmods/certs/public_key.der /etc/pki/akmods/public_key.pem
+
 # akmod-nvidia-580xx pulls in the kmod source; the xorg driver is the closed
 # GL/Vulkan/DDX stack for the legacy branch.
 #
@@ -69,11 +78,19 @@ if [[ ! -f "${NVIDIA_MODULE}" ]]; then
     exit 1
 fi
 
-# Verify the built module carries our MOK signature.
+# Verify the built module carries our MOK signature. A build that produces an
+# unsigned kmod would silently fail to load under Secure Boot, so this is a
+# hard failure rather than a warning.
 SIGNER=$(modinfo "${NVIDIA_MODULE}" | awk -F': ' '/signer/{print $2}')
 echo "NVIDIA module signer: ${SIGNER}"
-if [[ -n "${SIGNER}" ]] && [[ "${SIGNER}" != "hoodie Secure Boot" ]]; then
-    echo "WARNING: NVIDIA module signed by unexpected key '${SIGNER}'" >&2
+if [[ -z "${SIGNER}" ]]; then
+    echo "ERROR: ${NVIDIA_MODULE} is not signed (empty signer)" >&2
+    echo "ERROR: check /etc/pki/akmods/private/private_key.priv + kmodtool signing macros" >&2
+    exit 1
+fi
+if [[ "${SIGNER}" != "hoodie Secure Boot" ]]; then
+    echo "ERROR: ${NVIDIA_MODULE} signed by unexpected key '${SIGNER}'" >&2
+    exit 1
 fi
 
 # Refresh module dependency metadata so the freshly built modules resolve.

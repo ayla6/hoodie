@@ -105,41 +105,46 @@ echo "::endgroup::"
 echo "::group:: Set Up MOK Signing Keys"
 
 # akmods signs out-of-tree modules (e.g. NVIDIA) with these files when present.
-mkdir -p /etc/pki/akmods/certs
+# kmodtool's signing macros (/etc/rpm/macros.kmodtool) hard-code the private
+# key to /etc/pki/akmods/private/private_key.priv and the public cert to
+# /etc/pki/akmods/certs/public_key.der -- a build only signs the kmod if both
+# exist, so the paths must match exactly (note the `private/` subdir).
+mkdir -p /etc/pki/akmods/certs /etc/pki/akmods/private
 chmod 700 /etc/pki/akmods
 
 MOK_SUBJECT="/CN=hoodie Secure Boot"
 
+MOK_PRIVKEY=/etc/pki/akmods/private/private_key.priv
+MOK_CERT_DER=/etc/pki/akmods/certs/public_key.der
+MOK_CERT_PEM=/etc/pki/akmods/public_key.pem
+
 if [[ -f /run/secrets/mokkey ]]; then
     echo "Using MOK private key from build secret"
-    install -m 600 /run/secrets/mokkey /etc/pki/akmods/private_key.priv
+    install -m 600 /run/secrets/mokkey "${MOK_PRIVKEY}"
 else
     echo "WARNING: No MOK private key secret provided; generating a fresh keypair"
     echo "WARNING: Secure Boot users must re-enroll this image's key after each rebuild"
     openssl req -x509 -newkey rsa:2048 -nodes \
-        -keyout /etc/pki/akmods/private_key.priv \
-        -out /etc/pki/akmods/certs/public_key.der \
+        -keyout "${MOK_PRIVKEY}" \
+        -out "${MOK_CERT_DER}" \
         -outform DER -days 36500 -subj "${MOK_SUBJECT}"
-    openssl x509 -inform DER \
-        -in /etc/pki/akmods/certs/public_key.der \
-        -out /etc/pki/akmods/public_key.pem
 fi
 
 # Derive the DER + PEM certificates from the private key so the cert shipped
 # in the image always matches the key the modules/kernel were signed with.
-if [[ ! -f /etc/pki/akmods/certs/public_key.der ]]; then
+if [[ ! -f "${MOK_CERT_DER}" ]]; then
     openssl req -x509 -new \
-        -key /etc/pki/akmods/private_key.priv \
-        -out /etc/pki/akmods/certs/public_key.der \
+        -key "${MOK_PRIVKEY}" \
+        -out "${MOK_CERT_DER}" \
         -outform DER -days 36500 -subj "${MOK_SUBJECT}"
 fi
 openssl x509 -inform DER \
-    -in /etc/pki/akmods/certs/public_key.der \
-    -out /etc/pki/akmods/public_key.pem
+    -in "${MOK_CERT_DER}" \
+    -out "${MOK_CERT_PEM}"
 
-chmod 600 /etc/pki/akmods/private_key.priv
-chmod 644 /etc/pki/akmods/certs/public_key.der
-chmod 644 /etc/pki/akmods/public_key.pem
+chmod 600 "${MOK_PRIVKEY}"
+chmod 644 "${MOK_CERT_DER}"
+chmod 644 "${MOK_CERT_PEM}"
 
 echo "::endgroup::"
 
@@ -153,12 +158,12 @@ if [[ ! -f "/usr/lib/modules/${KERNEL_VERSION}/vmlinuz" ]]; then
 fi
 
 sbsign \
-    --key /etc/pki/akmods/private_key.priv \
-    --cert /etc/pki/akmods/public_key.pem \
+    --key "${MOK_PRIVKEY}" \
+    --cert "${MOK_CERT_PEM}" \
     --output "/usr/lib/modules/${KERNEL_VERSION}/vmlinuz" \
     "/usr/lib/modules/${KERNEL_VERSION}/vmlinuz"
 
-sbverify --cert /etc/pki/akmods/public_key.pem "/usr/lib/modules/${KERNEL_VERSION}/vmlinuz"
+sbverify --cert "${MOK_CERT_PEM}" "/usr/lib/modules/${KERNEL_VERSION}/vmlinuz"
 
 echo "::endgroup::"
 
