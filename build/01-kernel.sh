@@ -24,29 +24,64 @@ echo "::endgroup::"
 
 echo "::group:: Swap Kernel to CachyOS"
 
-# Workaround for coreos/rpm-ostree#5578: `rpm-ostree kernel-install add`
-# runs dracut before depmod, so a freshly-installed third-party kernel has
-# no modules.dep and dracut fails. Symlinking 50-depmod.install to a name
-# that sorts before 05-rpmostree.install makes depmod run first.
-ln -s 50-depmod.install /usr/lib/kernel/install.d/01-depmod.install
+# Swap the stock Fedora kernel for CachyOS the same way ublue's own base-image
+# build does (ublue-os/main build_files/install.sh): plain `rpm --erase
+# --nodeps` + `dnf5 install`, with kernel-install's rpmostree/dracut hooks
+# shimmed out. This bypasses rpm-ostree's FilesystemScriptPrep machinery,
+# which intermittently fails in CI with "Undoing prep filesystem for scripts:
+# Invalid argument (os error 22)".
+for pkg in kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra; do
+    rpm --erase "$pkg" --nodeps
+done
 
-# Same override-replace flow the COPR documents for Silverblue. The stock
-# kernel packages are removed and replaced by the CachyOS ones, matched
-# -devel provides the headers the NVIDIA akmod needs.
-rpm-ostree override remove \
-    kernel \
-    kernel-core \
-    kernel-modules \
-    kernel-modules-core \
-    kernel-modules-extra \
-    --install kernel-cachyos \
-    --install kernel-cachyos-devel \
-    --install kernel-cachyos-devel-matched
+# Shim kernel-install's rpmostree + dracut hooks so the kernel %post during
+# the dnf5 install can't trigger dracut before depmod (coreos/rpm-ostree#5578)
+# or rpm-ostree at all. The initramfs is generated explicitly below.
+KERNEL_INSTALL_D="/usr/lib/kernel/install.d"
+mv "${KERNEL_INSTALL_D}/05-rpmostree.install" "${KERNEL_INSTALL_D}/05-rpmostree.install.bak"
+mv "${KERNEL_INSTALL_D}/50-dracut.install" "${KERNEL_INSTALL_D}/50-dracut.install.bak"
+printf '%s\n' '#!/bin/sh' 'exit 0' > "${KERNEL_INSTALL_D}/05-rpmostree.install"
+printf '%s\n' '#!/bin/sh' 'exit 0' > "${KERNEL_INSTALL_D}/50-dracut.install"
+chmod +x "${KERNEL_INSTALL_D}/05-rpmostree.install" "${KERNEL_INSTALL_D}/50-dracut.install"
+
+# The -devel-matched package provides the exact-version headers the NVIDIA
+# akmod build needs later in build/04-nvidia.sh.
+dnf5 -y install \
+    kernel-cachyos \
+    kernel-cachyos-devel \
+    kernel-cachyos-devel-matched
+
+# Restore the real kernel-install hooks for the final image.
+mv -f "${KERNEL_INSTALL_D}/05-rpmostree.install.bak" "${KERNEL_INSTALL_D}/05-rpmostree.install"
+mv -f "${KERNEL_INSTALL_D}/50-dracut.install.bak" "${KERNEL_INSTALL_D}/50-dracut.install"
+
+# Pin the CachyOS kernel so later dnf transactions can't replace it.
+dnf5 versionlock add \
+    kernel-cachyos \
+    kernel-cachyos-core \
+    kernel-cachyos-modules \
+    kernel-cachyos-modules-core \
+    kernel-cachyos-modules-extra \
+    kernel-cachyos-devel \
+    kernel-cachyos-devel-matched
 
 # Pick the CachyOS kernel explicitly; stock module dirs may linger in the
 # base image and plain `ls | head -1` is sort-order dependent.
 KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
 echo "Active kernel: ${KERNEL_VERSION}"
+
+# The kernel-install hooks were bypassed, so build the initramfs manually in
+# the right order: depmod first, then dracut with ostree support (matching
+# ublue's build_files/initramfs.sh).
+depmod "${KERNEL_VERSION}"
+DRACUT_NO_XATTR=1 /usr/bin/dracut \
+    --no-hostonly \
+    --kver "${KERNEL_VERSION}" \
+    --reproducible \
+    -v \
+    --add ostree \
+    -f "/usr/lib/modules/${KERNEL_VERSION}/initramfs.img"
+chmod 0600 "/usr/lib/modules/${KERNEL_VERSION}/initramfs.img"
 
 echo "::endgroup::"
 
