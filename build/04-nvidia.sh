@@ -81,7 +81,7 @@ fi
 # Verify the built module carries our MOK signature. A build that produces an
 # unsigned kmod would silently fail to load under Secure Boot, so this is a
 # hard failure rather than a warning.
-SIGNER=$(modinfo "${NVIDIA_MODULE}" | awk -F': ' '/signer/{print $2}')
+SIGNER=$(modinfo "${NVIDIA_MODULE}" | awk -F': ' '/signer/{print $2}' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 echo "NVIDIA module signer: ${SIGNER}"
 if [[ -z "${SIGNER}" ]]; then
     echo "ERROR: ${NVIDIA_MODULE} is not signed (empty signer)" >&2
