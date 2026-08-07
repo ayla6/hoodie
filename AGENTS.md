@@ -37,7 +37,7 @@ services.json`, and `just check`.
   recipe; hoodie aliases its cert to `akmods-ublue.der` — password
   `universalblue`).
 - **Versionlocks**: mesa/libva/ffmpeg-ish codecs are distro-synced and locked
-  in `build/02-fedora-packages.sh` so the CachyOS kernel's userland matches.
+  in `build/02-fedora-repos.sh` so the CachyOS kernel's userland matches.
 - **NVIDIA is Maxwell (MX130)** → the R580 final legacy driver
   (`akmod-nvidia-580xx`), not the current branch. ublue's akmods cache does not
   build it, so it is compiled during the build against the CachyOS kernel.
@@ -51,7 +51,7 @@ services.json`, and `just check`.
 - **Custom XKB layout** (`files/main/usr/share/X11/xkb/symbols/hoodie`):
   Colemak-DH Wide base, AltGr = symbols layer, Menu = accent layer
   (`ISO_Level5_Shift`). Registered into `evdev.xml`/`base.xml` at build time
-  in `build/05-copy-files.sh` (injected before `</layoutList>`). Gotcha: in
+  in `build/07-copy-files.sh` (injected before `</layoutList>`). Gotcha: in
   XKB symbol merging, `NoSymbol` means "keep the earlier value" — to truly
   blank a level that a `include` filled, the key's redefinition must have a
   real symbol on a level past the included key's length, or nothing after the

@@ -23,7 +23,7 @@ COPY /ujust /ujust
 COPY /packages.json /packages.json
 COPY /services.json /services.json
 
-# Import Homebrew files (rsynced into the image in build/07-homebrew.sh)
+# Import Homebrew files (rsynced into the image in build/06-homebrew.sh)
 COPY --from=brew /system_files /oci/brew
 
 ###############################################################################
@@ -57,12 +57,15 @@ RUN --mount=type=secret,id=mokkey,required=false \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
     /ctx/build/01-kernel.sh
 
-# 02-fedora-packages installs/removes packages from Fedora repositories.
+# 02-fedora-repos sets up third-party repos, the build toolchain, and the
+# mesa/libva/qt6 versionlocks. Kept below 03/04 (they depend on the locks);
+# the packages.json-driven install moved up to 05 so package edits skip the
+# expensive NVIDIA kmod compile.
 RUN --mount=type=cache,dst=/var/cache/dnf \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
-    /ctx/build/02-fedora-packages.sh
+    /ctx/build/02-fedora-repos.sh
 
 # 03-third-party-packages installs from COPRs and other third-party repos.
 RUN --mount=type=cache,dst=/var/cache/dnf \
@@ -79,23 +82,32 @@ RUN --mount=type=cache,dst=/var/cache/dnf \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
     /ctx/build/04-nvidia.sh
 
-# 07-homebrew imports the brew system files. Kept below the package/kernel
-# layers (stable) and ABOVE 05-copy-files so our custom overlays are staged
+# 05-packages-json installs/removes the packages.json-driven packages. Lives
+# above the kernel/NVIDIA layers so editing packages.json (the most-churned
+# file) only rebuilds the outer layers, skipping the akmod compile.
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/05-packages-json.sh
+
+# 06-homebrew imports the brew system files. Kept below the package/kernel
+# layers (stable) and ABOVE 07-copy-files so our custom overlays are staged
 # last and win any filename clash with brew's system files.
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
-    /ctx/build/07-homebrew.sh
+    /ctx/build/06-homebrew.sh
 
-# 05-copy-files stages variant overlays, ujust recipes, and flatpak
+# 07-copy-files stages variant overlays, ujust recipes, and flatpak
 # preinstalls. It lives near the top of the layer stack so editing files/,
 # ujust/, or flatpaks/ only rebuilds the outermost layers -> smaller diffs.
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
-    /ctx/build/05-copy-files.sh
+    /ctx/build/07-copy-files.sh
 
-# 06-systemd enables units that may be shipped by step 05; must follow it.
+# 08-systemd enables units that may be shipped by step 07; must follow it.
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
-    /ctx/build/06-systemd.sh
+    /ctx/build/08-systemd.sh
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
@@ -103,11 +115,11 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_VENDOR="${IMAGE_VENDOR}" \
     SHA_HEAD_SHORT="${SHA_HEAD_SHORT}" \
     UBLUE_IMAGE_TAG="${UBLUE_IMAGE_TAG}" \
-    /ctx/build/08-branding.sh
+    /ctx/build/09-branding.sh
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
-    /ctx/build/09-cleanup.sh
+    /ctx/build/10-cleanup.sh
 
 ###############################################################################
 # FINALIZE

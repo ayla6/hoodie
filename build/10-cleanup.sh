@@ -21,7 +21,7 @@ echo "::endgroup::"
 
 echo "::group:: Remove dnf5 versionlocks"
 
-# Mesa/libva/qt6 were pinned during the build (see 02-fedora-packages.sh) so
+# Mesa/libva/qt6 were pinned during the build (see 02-fedora-repos.sh) so
 # distro-sync could upgrade them without flip-flopping. Clear the locks for the
 # final image so users get updates normally (matches ublue-main post-install).
 dnf5 versionlock clear

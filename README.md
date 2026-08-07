@@ -85,7 +85,7 @@ To test inside a VM or produce install media, see `just --list` for
 Containerfile        # flavor-aware build, base digests pinned here
 Justfile             # build / test / VM tooling
 hoodie.env           # image name, flavor, default tag
-build/               # numbered build steps (01-kernel … 09-cleanup)
+build/               # numbered build steps (01-kernel … 10-cleanup)
 files/main|gnome|kde # overlay tree, rsynced into the image
 flatpaks/            # first-boot Flathub preinstalls, per flavor
 ujust/main/          # just recipes installed as `ujust`

@@ -37,10 +37,10 @@ echo "::endgroup::"
 echo "::group:: Install Steam from Terra"
 
 # Steam isn't in Fedora either; Terra ships it with its 32-bit runtime deps.
-# 02-fedora-packages.sh versionlocked mesa* to the fedora-multimedia (x86_64
+# 02-fedora-repos.sh versionlocked mesa* to the fedora-multimedia (x86_64
 # only) EVR, which would make Steam's mesa-*(x86-32) deps unresolvable. Clear
 # those locks for this transaction only; the versionlocks are gone from the
-# final image anyway (09-cleanup.sh).
+# final image anyway (10-cleanup.sh).
 dnf5 versionlock delete 'mesa-*'
 dnf5 -y --enable-repo=terra --setopt=install_weak_deps=False install steam
 dnf5 versionlock add 'mesa-*'
