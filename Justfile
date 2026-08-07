@@ -1,13 +1,19 @@
-set dotenv-filename := "image-template.env"
+set dotenv-filename := "hoodie.env"
 set dotenv-load
 
-export image_name := env_var("IMAGE_NAME")
-export repo_organization := env_var("REPO_ORGANIZATION")
-export image_desc := env_var("IMAGE_DESC")
-export image_keywords := env_var("IMAGE_KEYWORDS")
-export image_logo_url := env_var("IMAGE_LOGO_URL")
-export default_tag := env_var("DEFAULT_TAG")
-export bib_image := env_var("BIB_IMAGE")
+export image_name := env("IMAGE_NAME", "hoodie")
+export image_flavor := env("IMAGE_FLAVOR", "gnome")
+export image_vendor := env("REPO_ORGANIZATION", "aylac")
+export default_tag := env("DEFAULT_TAG", "stable")
+export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest")
+export qemu_image := env("QEMU_IMAGE", "docker.io/qemux/qemu:latest")
+
+# Construct the full image name with flavor suffix
+# gnome is the primary image (no suffix), kde gets "-kde"
+[private]
+_image_suffix := if image_flavor == "gnome" { "" } else { "-" + image_flavor }
+[private]
+_full_image_name := image_name + _image_suffix
 
 alias build-vm := build-qcow2
 alias rebuild-vm := rebuild-qcow2
@@ -65,66 +71,56 @@ sudoif command *args:
     function sudoif(){
         if [[ "${UID}" -eq 0 ]]; then
             "$@"
-        elif [[ "$(command -v sudo)" && -n "${SSH_ASKPASS:-}" ]] && [[ -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" ]]; then
-            sudo --askpass "$@" || exit 1
         elif [[ "$(command -v sudo)" ]]; then
-            sudo "$@" || exit 1
+            /usr/bin/sudo "$@" || exit 1
         else
             exit 1
         fi
     }
     sudoif {{ command }} {{ args }}
 
-# This Justfile recipe builds a container image using Podman.
-#
-# Arguments:
-#   $target_image - The tag you want to apply to the image (default: $image_name).
-#   $tag - The tag for the image (default: $default_tag).
-#
-# The script constructs the version string using the tag and the current date.
-# If the git working directory is clean, it also includes the short SHA of the current HEAD.
-#
-# just build $target_image $tag
-#
-# Example usage:
-#   just build myimage mytag
-#
-# This will build an image 'myimage:mytag'
-#
-
-# Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag:
+# Build the image for the given flavor.
+# Usage:
+#   just build                      # hoodie:stable (gnome)
+#   just build hoodie stable kde    # hoodie-kde:stable
+build target_image=image_name tag=default_tag flavor=image_flavor:
     #!/usr/bin/env bash
 
     set -euox pipefail
 
-    BUILD_ARGS=()
-    LABELS=()
-    if [[ -z "$(git status -s)" ]]; then
-        GIT_SHA=$(git rev-parse --short HEAD)
-        LABELS+=("--label" "io.artifacthub.package.readme-url=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
-        LABELS+=("--label" "org.opencontainers.image.documentation=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
-        LABELS+=("--label" "org.opencontainers.image.source=https://github.com/{{ repo_organization }}/{{ image_name }}/blob/${GIT_SHA}/Containerfile")
-        LABELS+=("--label" "org.opencontainers.image.url=https://github.com/{{ repo_organization }}/{{ image_name }}/tree/${GIT_SHA}")
-        LABELS+=("--label" "org.opencontainers.image.version={{ default_tag }}.$(date +%Y%m%d)-${GIT_SHA}")
+    if [[ "{{ flavor }}" == "gnome" ]]; then
+        IMAGE_SUFFIX=""
+    else
+        IMAGE_SUFFIX="-{{ flavor }}"
+    fi
+    FINAL_IMAGE="{{ target_image }}${IMAGE_SUFFIX}"
+
+    # Resolve the base image for this flavor from the Containerfile ARG
+    # (single source of truth for Renovate digest bumps).
+    FLAVOR_UPPER=$(echo "{{ flavor }}" | tr '[:lower:]' '[:upper:]')
+    BASE_IMAGE=$(sed -n "s/^ARG BASE_IMAGE_${FLAVOR_UPPER}=\"\(.*\)\"$/\1/p" Containerfile | head -1)
+    if [[ -z "${BASE_IMAGE}" ]]; then
+        echo "ERROR: unknown flavor '{{ flavor }}'. Expected gnome or kde." >&2
+        exit 1
     fi
 
-    # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
-    # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
-    LABELS+=("--label" "io.artifacthub.package.deprecated=false")
-    LABELS+=("--label" "io.artifacthub.package.keywords={{ image_keywords }}")
-    LABELS+=("--label" "io.artifacthub.package.license=Apache-2.0")
-    LABELS+=("--label" "io.artifacthub.package.logo-url={{ image_logo_url }}")
-    LABELS+=("--label" "io.artifacthub.package.prerelease=false")
-    LABELS+=("--label" "org.opencontainers.image.created=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)")
-    LABELS+=("--label" "org.opencontainers.image.description={{ image_desc }}")
-    LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
-    LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
+    BUILD_ARGS=()
+    if [[ -z "$(git status -s)" ]]; then
+        BUILD_ARGS+=("--build-arg" "SHA_HEAD_SHORT=$(git rev-parse --short HEAD)")
+    fi
+    BUILD_ARGS+=("--build-arg" "IMAGE_NAME={{ target_image }}")
+    BUILD_ARGS+=("--build-arg" "IMAGE_VENDOR={{ image_vendor }}")
+    BUILD_ARGS+=("--build-arg" "IMAGE_FLAVOR={{ flavor }}")
+    BUILD_ARGS+=("--build-arg" "BASE_IMAGE=${BASE_IMAGE}")
 
-    # This actually builds the image!
-    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
+    echo "Building image: ${FINAL_IMAGE}:{{ tag }} (flavor: {{ flavor }}, base: ${BASE_IMAGE})"
 
-    podman build "${PODMAN_BUILD_ARGS[@]}" .
+    podman build \
+        "${BUILD_ARGS[@]}" \
+        --pull=newer \
+        --format=oci \
+        --tag "${FINAL_IMAGE}:{{ tag }}" \
+        .
 
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
@@ -132,14 +128,8 @@ rechunk $target_image=image_name $tag=default_tag:
 
     set -xeuo pipefail
 
-    # TODO: pin chunkah image to hash once mature enough
-    # You may run into space issues on github runners as we are making a
-    # complete copy of the image, which likely has no shared layers, unless your
-    # base image is also using chunkah
     CHUNKAH_CONFIG_FILE="$(mktemp)"
 
-    # You may omit the current directory here if you are confident that you
-    # won't run out of space on /tmp for your image
     CHUNKAH_OUTPUT_DIR="$(mktemp -d ./"${target_image}"_chunkah_XXXXXX)"
 
     trap 'rm -f "${CHUNKAH_CONFIG_FILE}"; rm -rf "${CHUNKAH_OUTPUT_DIR}"' EXIT
@@ -162,35 +152,6 @@ rechunk $target_image=image_name $tag=default_tag:
 
     CHUNKED_IMAGE="$(podman pull "oci:${CHUNKAH_OUTPUT_DIR}/chunked")"
     podman tag "${CHUNKED_IMAGE}" "${target_image}:${tag}"
-
-# Split the image for smaller updates (Classical)!
-ostree-rechunk $target_image=image_name $tag=default_tag:
-    #!/usr/bin/env bash
-
-    set -xeuo pipefail
-
-    # TODO: This is the only blocker for rootless CI
-    # https://github.com/coreos/rpm-ostree/issues/5346
-    if [[ ! "${UID}" -eq "0" ]]; then
-      echo "This needs to run as root."
-      exit 1
-    fi
-
-    # Use the already-built local image to avoid pulling from a remote registry
-    RPM_OSTREE_CHUNKER_IMAGE="localhost/${target_image}:${tag}"
-
-    podman run --rm \
-      --pull=never \
-      --privileged \
-      -v "/var/lib/containers:/var/lib/containers" \
-      --entrypoint /usr/bin/rpm-ostree \
-      "${RPM_OSTREE_CHUNKER_IMAGE}" \
-      compose build-chunked-oci \
-      --max-layers 127 \
-      --format-version=2 \
-      --bootc \
-      --from "localhost/${target_image}:${tag}" \
-      --output containers-storage:"localhost/${target_image}:${tag}"
 
 # Generate Default Tag
 [group('Utility')]
@@ -251,20 +212,6 @@ image_name $target_image=image_name:
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
 #              If the image is found, it loads it into rootful podman. If the image is not found, it pulls it from the repository.
-#
-# Parameters:
-#   $target_image - The name of the target image to be loaded or pulled.
-#   $tag - The tag of the target image to be loaded or pulled. Default is 'default_tag'.
-#
-# Example usage:
-#   _rootful_load_image my_image latest
-#
-# Steps:
-# 1. Check if the script is already running as root or under sudo.
-# 2. Check if target image is in the non-root podman container storage)
-# 3. If the image is found, load it into rootful podman using podman scp.
-# 4. If the image is not found, pull it from the remote repository into reootful podman.
-
 _rootful_load_image $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
@@ -281,11 +228,11 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
     return_code=$?
     set -e
 
-    USER_IMG_ID=$(podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+    USER_IMG_ID=$(podman images --filter reference="${target_image}:${tag}" --format "{{ '{{.ID}}' }}")
 
     if [[ $return_code -eq 0 ]]; then
         # If the image is found, load it into rootful podman
-        ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+        ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "{{ '{{.ID}}' }}")
         if [[ "$ID" != "$USER_IMG_ID" ]]; then
             # If the image ID is not found or different from user, copy the image from user podman to root podman
             COPYTMP=$(mktemp -p "${PWD}" -d -t _build_podman_scp.XXXXXXXXXX)
@@ -303,9 +250,9 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
 #   target_image: The name of the image to build (ex. localhost/fedora)
 #   tag: The tag of the image to build (ex. latest)
 #   type: The type of image to build (ex. qcow2, raw, iso)
-#   config: The configuration file to use for the build (default: disk_config/disk.toml)
+#   config: The configuration file to use for the build (default: iso/disk.toml)
 
-# Example: just _rebuild-bib localhost/fedora latest qcow2 disk_config/disk.toml
+# Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml
 _build-bib $target_image $tag $type $config: (_rootful_load_image target_image tag)
     #!/usr/bin/env bash
     set -euo pipefail
@@ -340,34 +287,38 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
 #   target_image: The name of the image to build (ex. localhost/fedora)
 #   tag: The tag of the image to build (ex. latest)
 #   type: The type of image to build (ex. qcow2, raw, iso)
-#   config: The configuration file to use for the build (deafult: disk_config/disk.toml)
+#   config: The configuration file to use for the build (deafult: iso/disk.toml)
 
-# Example: just _rebuild-bib localhost/fedora latest qcow2 disk_config/disk.toml
+# Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml
 _rebuild-bib $target_image $tag $type $config: (build target_image tag) && (_build-bib target_image tag type config)
 
 # Build a QCOW2 virtual machine image
+# Usage: just build-qcow2 [target_image] [tag] [flavor]
+# Examples:
+#   just build-qcow2                        # builds hoodie:stable (gnome)
+#   just build-qcow2 hoodie stable kde      # builds hoodie-kde:stable
 [group('Build Virtal Machine Image')]
-build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "disk_config/disk.toml")
+build-qcow2 target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "qcow2" "iso/disk.toml")
 
 # Build a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/disk.toml")
+build-raw target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "raw" "iso/disk.toml")
 
 # Build an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "disk_config/iso.toml")
+build-iso target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "iso" "iso/iso-{{ flavor }}.toml")
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/disk.toml")
+rebuild-qcow2 target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "qcow2" "iso/disk.toml")
 
 # Rebuild a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "disk_config/disk.toml")
+rebuild-raw target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "raw" "iso/disk.toml")
 
 # Rebuild an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "iso" "disk_config/iso.toml")
+rebuild-iso target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: (build ("localhost/" + image_name) tag flavor) && (_build-bib target_image tag "iso" "iso/iso-{{ flavor }}.toml")
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm $target_image $tag $type $config:
@@ -405,41 +356,24 @@ _run-vm $target_image $tag $type $config:
     run_args+=(--env "GPU=Y")
     run_args+=(--device=/dev/kvm)
     run_args+=(--volume "${PWD}/${image_file}":"/boot.${type}")
-    run_args+=(docker.io/qemux/qemu)
+    run_args+=("${qemu_image}")
 
     # Run the VM and open the browser to connect
     (sleep 30 && xdg-open http://localhost:"$port") &
     podman run "${run_args[@]}"
 
 # Run a virtual machine from a QCOW2 image
+# Usage: just run-vm-qcow2 [target_image] [tag] [flavor]
 [group('Run Virtal Machine')]
-run-vm-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "qcow2" "disk_config/disk.toml")
+run-vm-qcow2 target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: && (_run-vm target_image tag "qcow2" "iso/disk.toml")
 
 # Run a virtual machine from a RAW image
 [group('Run Virtal Machine')]
-run-vm-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "raw" "disk_config/disk.toml")
+run-vm-raw target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: && (_run-vm target_image tag "raw" "iso/disk.toml")
 
 # Run a virtual machine from an ISO
 [group('Run Virtal Machine')]
-run-vm-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "iso" "disk_config/iso.toml")
-
-# Run a virtual machine using systemd-vmspawn
-[group('Run Virtal Machine')]
-spawn-vm rebuild="0" type="qcow2" ram="6G":
-    #!/usr/bin/env bash
-
-    set -euo pipefail
-
-    [ "{{ rebuild }}" -eq 1 ] && echo "Rebuilding the ISO" && just build-vm {{ rebuild }} {{ type }}
-
-    systemd-vmspawn \
-      -M "bootc-image" \
-      --console=gui \
-      --cpus=2 \
-      --ram=$(echo {{ ram }}| numfmt --from=iec) \
-      --network-user-mode \
-      --vsock=false --pass-ssh-key=false \
-      -i ./output/**/*.{{ type }}
+run-vm-iso target_image=("localhost/" + _full_image_name) tag=default_tag flavor=image_flavor: && (_run-vm target_image tag "iso" "iso/iso-{{ flavor }}.toml")
 
 # Runs shell check on all Bash scripts
 lint:

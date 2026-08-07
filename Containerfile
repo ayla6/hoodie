@@ -1,41 +1,108 @@
-# Allow build scripts to be referenced without being copied into the final image
+###############################################################################
+# BUILD ARGUMENTS
+###############################################################################
+# Static values enable Renovate to detect and update each base image digest.
+ARG BASE_IMAGE_GNOME="ghcr.io/ublue-os/silverblue-main:44@sha256:da9d42dddda2a2336b27cbda88dc6370a59f3530b8b678d04355589cb93d5090"
+ARG BASE_IMAGE_KDE="ghcr.io/ublue-os/kinoite-main:44@sha256:73ca59ba8b2209c13975610a7a184a6fd2c757ac1e94780934d7215bf0928f72"
+ARG BASE_IMAGE="${BASE_IMAGE_GNOME}"
+
+# Brew image provides Homebrew system files for import.
+ARG BREW_IMAGE="ghcr.io/ublue-os/brew:latest"
+ARG BREW_IMAGE_SHA="sha256:8855464e5c150974c5edf4343ffef50ca37b1c4d96a648dce28927033010a372"
+
+###############################################################################
+# IMPORT STAGES
+###############################################################################
+FROM ${BREW_IMAGE}@${BREW_IMAGE_SHA} AS brew
+
 FROM scratch AS ctx
-COPY build_files /
-COPY system_files /system_files
+COPY /build /build
+COPY /files /files
+COPY /brew /brew
+COPY /flatpaks /flatpaks
+COPY /ujust /ujust
+COPY /packages.json /packages.json
+COPY /services.json /services.json
 
-# Base Image
-FROM ghcr.io/ublue-os/bazzite:stable@sha256:b923f92d5a5b59eb992e269383eba2744601052da9d3d1595f76e79aa6ce2df0
-## Other possible base images include:
-# FROM ghcr.io/ublue-os/bazzite:testing
-# FROM ghcr.io/ublue-os/aurora:stable
-# FROM ghcr.io/ublue-os/bluefin-nvidia-open:stable
-# 
-# ... and so on, here are more base images
-# Universal Blue Images: https://github.com/orgs/ublue-os/packages
-# Fedora base image: quay.io/fedora/fedora-bootc:44
-# CentOS base images: quay.io/centos-bootc/centos-bootc:stream10
+# Import Homebrew files (rsynced into the image in build/07-homebrew.sh)
+COPY --from=brew /system_files /oci/brew
 
-### [IM]MUTABLE /opt
-## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
-## make it mutable/writable for users. However, some packages write files to this directory,
-## thus its contents might be wiped out when bootc deploys an image, making it troublesome for
-## some packages. Eg, google-chrome, docker-desktop.
-##
-## Uncomment the following line if one desires to make /opt immutable and be able to be used
-## by the package manager.
+###############################################################################
+# MAIN IMAGE
+###############################################################################
+FROM ${BASE_IMAGE} AS base
 
-# RUN rm /opt && mkdir /opt
+# Build arguments for image metadata and variant selection
+ARG IMAGE_NAME="hoodie"
+ARG IMAGE_VENDOR="aylac"
+ARG IMAGE_FLAVOR="gnome"
+ARG SHA_HEAD_SHORT=""
+ARG UBLUE_IMAGE_TAG="stable"
 
-### MODIFICATIONS
-## make modifications desired in your image and install packages by modifying the build.sh script
-## the following RUN directive does all the things required to run "build.sh" as recommended.
+# Labels for image metadata
+LABEL org.opencontainers.image.name="${IMAGE_NAME}"
+LABEL org.opencontainers.image.vendor="${IMAGE_VENDOR}"
+LABEL org.opencontainers.image.flavor="${IMAGE_FLAVOR}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
+
+###############################################################################
+# BUILD PROCESS
+###############################################################################
+# 01-kernel swaps in the CachyOS kernel and signs it for Secure Boot.
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/01-kernel.sh
+
+# 02-fedora-packages installs/removes packages from Fedora repositories.
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/02-fedora-packages.sh
+
+# 03-third-party-packages installs from COPRs and other third-party repos.
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/03-third-party-packages.sh
+
+# 04-nvidia installs the legacy 580xx driver and signs the built kmod.
+# Must follow 01-kernel (needs CachyOS kernel headers) and 03 (repos).
+RUN --mount=type=cache,dst=/var/cache/dnf \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/04-nvidia.sh
+
+# 05-copy-files stages variant overlays, ujust recipes, and flatpak preinstalls.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/05-copy-files.sh
+
+# 06-systemd enables units that may be shipped by step 05; must follow it.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/06-systemd.sh
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
-    --mount=type=cache,dst=/var/cache \
-    --mount=type=cache,dst=/var/log \
-    --mount=type=tmpfs,dst=/tmp \
-    /ctx/build.sh
+    /ctx/build/07-homebrew.sh
 
-### LINTING
-## Verify final image and contents are correct.
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    IMAGE_NAME="${IMAGE_NAME}" \
+    IMAGE_VENDOR="${IMAGE_VENDOR}" \
+    SHA_HEAD_SHORT="${SHA_HEAD_SHORT}" \
+    UBLUE_IMAGE_TAG="${UBLUE_IMAGE_TAG}" \
+    /ctx/build/08-branding.sh
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    IMAGE_FLAVOR="${IMAGE_FLAVOR}" \
+    /ctx/build/09-cleanup.sh
+
+###############################################################################
+# FINALIZE
+###############################################################################
 RUN bootc container lint
