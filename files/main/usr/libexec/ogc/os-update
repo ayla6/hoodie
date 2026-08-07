@@ -1,0 +1,107 @@
+#!/usr/bin/bash
+
+# Steam client game-mode update helper. The SteamOS UI (gamescope/tenfoot)
+# invokes this via `steamos-update` (a pkexec wrapper resolving to this
+# script through the org.hoodie.policykit.gamescope-session policy).
+#
+# Parameter combinations Steam is known to use:
+# steamos-update --supports-duplicate-detection     -- should do nothing
+# steamos-update --enable-duplicate-detection check -- should check for update
+# steamos-update check                              -- should check for update
+# steamos-update --enable-duplicate-detection       -- should perform an update
+# steamos-update                                    -- should perform an update
+#
+# Exit Codes:
+# 0: Success (upgrade available, --supports-duplicate-detection handled, or
+#    the script completed even if the upgrade failed).
+# 7: Failure (uupd not installed, upgrade already installed, update checks
+#    failed, or connectivity check failed).
+
+_upgrade() {
+    # Log rotate the last session
+    if [ -f "${HOME}/.steamos-update.log" ]; then
+        cp "${HOME}/.steamos-update.log" "${HOME}/.steamos-update.log.old"
+    fi
+    : > "${HOME}/.steamos-update.log"
+
+    local last_pct=-1
+    local uupd_status
+
+    # Run uupd and capture its exit code
+    {
+        runcon system_u:unconfined_r:unconfined_t:s0 \
+            /usr/bin/uupd --hw-check=false --disable-module-brew --disable-module-distrobox \
+            --disable-module-flatpak --json --log-level debug 2>&1
+        echo $? > /tmp/uupd_exit_code
+    } | while IFS= read -r line; do
+        echo "$line" >> "${HOME}/.steamos-update.log"
+
+        pct=$(echo "$line" | jq -r 'select(.msg == "Updating") | .overall // empty' 2>/dev/null)
+        if [[ -n "$pct" ]]; then
+            pct=${pct%.*}
+            if [[ "$pct" -ne "$last_pct" ]]; then
+                echo "${pct}%"
+                last_pct=$pct
+            fi
+        fi
+    done
+
+    uupd_status=$(cat /tmp/uupd_exit_code)
+    rm -f /tmp/uupd_exit_code
+
+    return "$uupd_status"
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    check)
+        _CHECK=1
+        shift
+        ;;
+    --supports-duplicate-detection)
+        _EXIT=1
+        shift
+        ;;
+    *)
+        shift
+        ;;
+    esac
+done
+
+if [[ -n $_EXIT ]]; then
+    exit 0
+fi
+
+if ! command -v uupd >/dev/null; then
+    exit 7 # uupd not installed
+fi
+
+if ! command -v jq >/dev/null; then
+    exit 7 # jq not installed
+fi
+
+if [ -n "${_CHECK}" ]; then
+    if [ -f '/tmp/upgrade-installed' ]; then
+        exit 7 # Upgrade already installed
+    else
+        # Perform connectivity check
+        if ! wget -q --spider https://github.com; then
+            exit 7 # Connectivity check failed
+        fi
+
+        # Check system state
+        if uupd update-check | grep -q "true"; then
+            exit 0 # Upgrade available
+        else
+            exit 7 # Checks failed
+        fi
+    fi
+else
+    # We are triggering update
+    _upgrade
+    if [ $? -eq 0 ]; then
+        touch /tmp/upgrade-installed
+    else
+        exit 0 # Upgrade failed
+    fi
+fi

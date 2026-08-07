@@ -8,9 +8,12 @@
                     "input-remapper.service",
                     "smb.service",
                     "nmb.service",
-                    "tailscaled.service"
+                    "tailscaled.service",
+                    "uupd.timer"
                 ],
-                "disable": []
+                "disable": [
+                    "rpm-ostreed-automatic.timer"
+                ]
             },
             "user": {
                 "enable": ["syncthing.service"],

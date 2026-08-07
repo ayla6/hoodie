@@ -2,15 +2,11 @@
 
 alias upgrade := update
 
-# Update system, flatpaks, and containers all at once
+# Update system, flatpaks, and containers all at once via uupd
 update:
     #!/usr/bin/bash
-    echo "Updating system (rpm-ostree)..."
-    sudo rpm-ostree update
-    echo "Updating flatpaks..."
-    flatpak update -y
-    echo "Updating distrobox containers..."
-    distrobox upgrade --all 2>/dev/null || true
+    echo "Updating system, flatpaks, and containers (uupd)..."
+    sudo uupd
     echo "Update complete."
 
 alias changelog := changelogs
@@ -30,10 +26,10 @@ update-firmware:
 
 alias auto-update := toggle-updates
 
-# Turn automatic updates on or off
+# Turn automatic updates (uupd.timer) on or off
 toggle-updates:
     #!/usr/bin/bash
-    if systemctl -q is-enabled rpm-ostreed-automatic.timer 2>/dev/null; then
+    if systemctl -q is-enabled uupd.timer 2>/dev/null; then
         CURRENT_STATE="Enabled"
     else
         CURRENT_STATE="Disabled"
@@ -42,9 +38,9 @@ toggle-updates:
     echo "Enable or Disable automatic updates?"
     OPTION=$(gum choose Enable Disable)
     if [ "${OPTION}" == "Enable" ]; then
-        sudo systemctl enable --now rpm-ostreed-automatic.timer
+        sudo systemctl enable --now uupd.timer
         echo "Automatic updates enabled."
     elif [ "${OPTION}" == "Disable" ]; then
-        sudo systemctl disable --now rpm-ostreed-automatic.timer
+        sudo systemctl disable --now uupd.timer
         echo "Automatic updates disabled."
     fi

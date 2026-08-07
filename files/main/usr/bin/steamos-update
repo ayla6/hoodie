@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+
+# SteamOS game-mode update entrypoint. The SteamOS UI calls `steamos-update`
+# on PATH; pkexec resolves the exec path to the
+# org.hoodie.policykit.gamescope-session.pkexec.os-update action and runs the
+# real update helper as root without prompting (wheel users).
+
+exec pkexec /usr/libexec/ogc/os-update "$@"

@@ -2,9 +2,13 @@
     "variants": {
         "main": {
             "include": [
+                "bazaar",
                 "bees",
+                "compsize",
                 "dbus-x11",
+                "direnv",
                 "distrobox",
+                "duperemove",
                 "fcitx5",
                 "fcitx5-chewing",
                 "fcitx5-chinese-addons",
@@ -23,6 +27,7 @@
                 "input-remapper",
                 "input-remapper-gtk",
                 "just",
+                "jq",
                 "mangohud",
                 "neovim",
                 "pciutils",
@@ -32,8 +37,10 @@
                 "cifs-utils",
                 "syncthing",
                 "tmux",
+                "uupd",
                 "vkBasalt",
                 "vulkan-tools",
+                "wget",
                 "wl-clipboard",
                 "xdg-user-dirs",
                 "zram-generator"
@@ -45,13 +52,14 @@
                 "dconf-editor",
                 "gnome-tweaks"
             ],
-            "exclude": []
+            "exclude": ["gnome-software"]
         },
         "kde": {
             "include": [
-                "kcm-fcitx5"
+                "kcm-fcitx5",
+                "krunner-bazaar"
             ],
-            "exclude": []
+            "exclude": ["plasma-discover", "plasma-discover-kns"]
         }
     }
 }
