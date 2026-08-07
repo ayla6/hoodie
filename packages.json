@@ -19,7 +19,6 @@
                 "fzf",
                 "gamescope",
                 "git",
-                "glx-utils",
                 "htop",
                 "input-remapper",
                 "input-remapper-gtk",
@@ -29,12 +28,10 @@
                 "pciutils",
                 "syncthing",
                 "tmux",
-                "umu-launcher",
                 "vkBasalt",
                 "vulkan-tools",
                 "wl-clipboard",
                 "xdg-user-dirs",
-                "xorg-x11-server-utils",
                 "zram-generator"
             ],
             "exclude": []
