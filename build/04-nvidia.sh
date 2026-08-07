@@ -58,10 +58,12 @@ echo "::group:: Compile and Sign NVIDIA kmod"
 # with /etc/pki/akmods (private_key.priv + certs/public_key.der from 01).
 akmods --force --kernels "${KERNEL_VERSION}"
 
-NVIDIA_MODULE="/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia/nvidia.ko"
+# kmodtool strips "-kmod" from the akmod name, so the modules land in
+# extra/nvidia-580xx/ (not extra/nvidia/) even though the binary is nvidia.ko.
+NVIDIA_MODULE="/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia-580xx/nvidia.ko"
 if [[ ! -f "${NVIDIA_MODULE}" ]]; then
     echo "ERROR: akmods did not produce ${NVIDIA_MODULE}" >&2
-    ls -la "/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia/" || true
+    ls -la "/usr/lib/modules/${KERNEL_VERSION}/extra/nvidia-580xx/" || true
     exit 1
 fi
 
