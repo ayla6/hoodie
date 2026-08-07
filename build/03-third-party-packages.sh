@@ -14,8 +14,11 @@ source /ctx/build/copr-helpers.sh
 
 echo "::group:: Install Tailscale"
 
-curl -fsSL https://pkgs.tailscale.com/stable/fedora/noarch/tailscale.repo \
-    -o /etc/yum.repos.d/tailscale.repo
+# Same repo-add pattern Bazzite uses: download the repo metadata via dnf's
+# config-manager rather than curl, then install the client. The distro
+# component resolves to $basearch, so there is no /noarch/ in the URL.
+dnf5 config-manager addrepo --overwrite \
+    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 dnf5 -y install tailscale
 
 echo "::endgroup::"

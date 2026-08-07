@@ -44,6 +44,20 @@ done
 
 echo "::endgroup::"
 
+echo "::group:: Configure Samba Usershares"
+
+# Allow the samba service + samba-client through the default firewall zone so
+# smb/nmb actually work out of the box (same pattern as ublue's aurora
+# override-install). samba-usershares ships the group and
+# /var/lib/samba/usershares with 1770 root:usershares, so no manual dir setup
+# is needed.
+firewall-offline-cmd --service=samba --service=samba-client
+setsebool -P samba_enable_home_dirs=1
+setsebool -P samba_export_all_ro=1
+setsebool -P samba_export_all_rw=1
+
+echo "::endgroup::"
+
 echo "::group:: Register Custom XKB Layout"
 
 # Register the hoodie layout (symbols/hoodie) so GNOME/KDE can select it.

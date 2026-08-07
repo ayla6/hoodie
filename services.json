@@ -6,12 +6,14 @@
                     "flatpak-nuke-fedora.service",
                     "flatpak-preinstall.service",
                     "input-remapper.service",
+                    "smb.service",
+                    "nmb.service",
                     "tailscaled.service"
                 ],
                 "disable": []
             },
             "user": {
-                "enable": ["syncthing@.service"],
+                "enable": ["syncthing.service"],
                 "disable": []
             }
         },
