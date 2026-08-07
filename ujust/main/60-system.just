@@ -51,8 +51,8 @@ rebase-helper:
     #!/usr/bin/bash
     CURRENT_VARIANT=$(grep '^VARIANT_ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
     case "$CURRENT_VARIANT" in
-        hoodie)   IMAGE="ghcr.io/aylac/hoodie-kde:stable" ;;
-        hoodie-kde) IMAGE="ghcr.io/aylac/hoodie:stable" ;;
+        hoodie)   IMAGE="ghcr.io/ayla6/hoodie-kde:stable" ;;
+        hoodie-kde) IMAGE="ghcr.io/ayla6/hoodie:stable" ;;
         *)        echo "Not running a hoodie variant."; exit 1 ;;
     esac
     echo "Rebasing to $IMAGE..."

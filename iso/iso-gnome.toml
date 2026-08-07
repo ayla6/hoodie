@@ -1,7 +1,7 @@
 [customizations.installer.kickstart]
 contents = """
 %post
-bootc switch --mutate-in-place --transport registry ghcr.io/aylac/hoodie:stable
+bootc switch --mutate-in-place --transport registry ghcr.io/ayla6/hoodie:stable
 %end
 """
 

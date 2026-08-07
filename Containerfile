@@ -18,7 +18,6 @@ FROM ${BREW_IMAGE}@${BREW_IMAGE_SHA} AS brew
 FROM scratch AS ctx
 COPY /build /build
 COPY /files /files
-COPY /brew /brew
 COPY /flatpaks /flatpaks
 COPY /ujust /ujust
 COPY /packages.json /packages.json
@@ -34,7 +33,7 @@ FROM ${BASE_IMAGE} AS base
 
 # Build arguments for image metadata and variant selection
 ARG IMAGE_NAME="hoodie"
-ARG IMAGE_VENDOR="aylac"
+ARG IMAGE_VENDOR="ayla6"
 ARG IMAGE_FLAVOR="gnome"
 ARG SHA_HEAD_SHORT=""
 ARG UBLUE_IMAGE_TAG="stable"

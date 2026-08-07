@@ -1,9 +1,9 @@
 set dotenv-filename := "hoodie.env"
-set dotenv-load := true
+set dotenv-load
 
 export image_name := env("IMAGE_NAME", "hoodie")
 export image_flavor := env("IMAGE_FLAVOR", "gnome")
-export image_vendor := env("REPO_ORGANIZATION", "aylac")
+export image_vendor := env("REPO_ORGANIZATION", "ayla6")
 export default_tag := env("DEFAULT_TAG", "stable")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest")
 export qemu_image := env("QEMU_IMAGE", "docker.io/qemux/qemu:latest")

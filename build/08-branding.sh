@@ -14,7 +14,7 @@ echo "::group:: Applying OS Release Branding"
 
 IMAGE_PRETTY_NAME="hoodie"
 IMAGE_LIKE="fedora"
-IMAGE_VENDOR="${IMAGE_VENDOR:-aylac}"
+IMAGE_VENDOR="${IMAGE_VENDOR:-ayla6}"
 IMAGE_NAME="${IMAGE_NAME:-hoodie}"
 IMAGE_FLAVOR="${IMAGE_FLAVOR:-gnome}"
 IMAGE_TAG="${UBLUE_IMAGE_TAG:-stable}"

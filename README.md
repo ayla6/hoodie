@@ -10,8 +10,8 @@ gaming and development tooling.
 
 | Flavor | Image | Base |
 | --- | --- | --- |
-| GNOME (default) | `ghcr.io/aylac/hoodie:stable` | `ghcr.io/ublue-os/silverblue-main:44` |
-| KDE | `ghcr.io/aylac/hoodie-kde:stable` | `ghcr.io/ublue-os/kinoite-main:44` |
+| GNOME (default) | `ghcr.io/ayla6/hoodie:stable` | `ghcr.io/ublue-os/silverblue-main:44` |
+| KDE | `ghcr.io/ayla6/hoodie-kde:stable` | `ghcr.io/ublue-os/kinoite-main:44` |
 
 ## What's included
 
@@ -51,7 +51,7 @@ just build-iso hoodie stable kde
 Or rebase an existing Fedora Atomic system:
 
 ```sh
-sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/aylac/hoodie:stable
+sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/ayla6/hoodie:stable
 sudo systemctl reboot
 ```
 
