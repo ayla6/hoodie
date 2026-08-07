@@ -30,9 +30,22 @@ echo "::group:: Install NVIDIA 580xx Driver"
 KERNEL_VERSION=$(ls -d /usr/lib/modules/*cachyos* | head -1 | xargs basename)
 echo "Building NVIDIA kmod for kernel: ${KERNEL_VERSION}"
 
-# akmod-nvidia-580xx pulls in akmods + the kmod source; the xorg driver is
-# the closed GL/Vulkan/DDX stack for the legacy branch.
-dnf5 -y install \
+# akmods must be installed with its scriptlets running so its %pre creates the
+# dedicated build user (and %post enables its units) -- the explicit akmods run
+# below drops privileges to that user via runuser.
+dnf5 -y install akmods
+
+# akmod-nvidia-580xx pulls in the kmod source; the xorg driver is the closed
+# GL/Vulkan/DDX stack for the legacy branch.
+#
+# Scriptlets are suppressed on this transaction: rpmfusion's akmod %post runs
+# /usr/sbin/akmods-ostree-post, which (in an ostree-detected environment)
+# tries to build the kmod for every kernel in /lib/modules as root. akmodsbuild
+# refuses to run as root, so that %post aborts the whole dnf transaction. Its
+# %posttrans also spawns a detached background build. We compile explicitly
+# below via `akmods --force --kernels`, which drops privileges to the akmods
+# user the way the package intends.
+dnf5 -y install --setopt=tsflags=noscripts \
     akmod-nvidia-580xx \
     xorg-x11-drv-nvidia-580xx \
     xorg-x11-drv-nvidia-580xx-power

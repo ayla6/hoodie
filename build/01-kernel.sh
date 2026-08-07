@@ -55,6 +55,17 @@ dnf5 -y install \
 mv -f "${KERNEL_INSTALL_D}/05-rpmostree.install.bak" "${KERNEL_INSTALL_D}/05-rpmostree.install"
 mv -f "${KERNEL_INSTALL_D}/50-dracut.install.bak" "${KERNEL_INSTALL_D}/50-dracut.install"
 
+# The base image's stock kernel leaves stale /lib/modules dirs behind: rpm
+# --erase removes the kernel RPMs but not build-generated files like the
+# initramfs.img, so the whole dir survives. Keep only the CachyOS kernel so
+# akmods/build tooling and the final image never see a phantom stock kernel.
+for d in /usr/lib/modules/*/; do
+    case "${d}" in
+        *cachyos*) ;;
+        *) rm -rf "${d}" ;;
+    esac
+done
+
 # Pin the CachyOS kernel so later dnf transactions can't replace it.
 dnf5 versionlock add \
     kernel-cachyos \
