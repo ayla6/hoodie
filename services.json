@@ -8,6 +8,7 @@
                     "input-remapper.service",
                     "smb.service",
                     "nmb.service",
+                    "systemd-oomd.service",
                     "tailscaled.service",
                     "uupd.timer"
                 ],

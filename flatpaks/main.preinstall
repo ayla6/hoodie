@@ -1,7 +1,17 @@
 # Media & content
-org.mozilla.firefox
-com.obsproject.Studio
-io.mpv.Mpv
+[Flatpak Preinstall org.mozilla.firefox]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall com.obsproject.Studio]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall io.mpv.Mpv]
+Branch=stable
+Install=true
 
 # Utilities
-com.github.tchx84.Flatseal
+[Flatpak Preinstall com.github.tchx84.Flatseal]
+Branch=stable
+Install=true

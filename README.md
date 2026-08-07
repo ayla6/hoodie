@@ -15,8 +15,9 @@ gaming and development tooling.
 
 ## What's included
 
-- **CachyOS kernel** (BORE scheduler, 1000Hz), installed via `rpm-ostree
-  override` and signed with the hoodie MOK key.
+- **CachyOS kernel** (BORE scheduler, 1000Hz), swapped in via plain `rpm`
+  erase + `dnf5` install (bypassing rpm-ostree's script machinery, same as
+  ublue's own base-image build) and signed with the hoodie MOK key.
 - **Secure Boot**: the kernel is `sbsign`ed and the NVIDIA module is
   `kmodsign`ed with the same key (`/etc/pki/akmods/`). Enroll once with
   `ujust enroll-secure-boot-key`. The private key is never shipped in the
@@ -32,8 +33,8 @@ gaming and development tooling.
   Enter `hoodie` if prompted for a password.
 - **NVIDIA 580xx** (Maxwell) driver with power management, Flatpak runtime sync,
   and a legacy-hardware helper.
-- **Gaming**: Steam, gamescope Wayland session, mangohud, vkBasalt,
-  umu-launcher, vulkan-tools.
+- **Gaming**: Steam (+ steam-devices, gamemode), gamescope Wayland session,
+  mangohud, vkBasalt, umu-launcher, vulkan-tools.
 - **Performance**: zram (lz4) at 100% of RAM, tuned sysctls, kyber/bfq IO
   schedulers, GPU-reset udev rules, memlock for gamescope, beesd BTRFS
   dedupe timer, systemd-oomd.

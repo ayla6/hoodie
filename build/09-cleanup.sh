@@ -19,6 +19,15 @@ done
 
 echo "::endgroup::"
 
+echo "::group:: Remove dnf5 versionlocks"
+
+# Mesa/libva/qt6 were pinned during the build (see 02-fedora-packages.sh) so
+# distro-sync could upgrade them without flip-flopping. Clear the locks for the
+# final image so users get updates normally (matches ublue-main post-install).
+dnf5 versionlock clear
+
+echo "::endgroup::"
+
 echo "::group:: Fix bootc lint issues"
 
 # Fix /var/run symlink if it was broken by package installation (e.g., Steam)
