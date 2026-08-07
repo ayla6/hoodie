@@ -50,7 +50,7 @@ echo "::endgroup::"
 
 echo "::group:: Install Signing Tools"
 
-dnf5 -y install sbsigntools kmodsign openssl
+dnf5 -y install sbsigntools openssl
 
 echo "::endgroup::"
 
