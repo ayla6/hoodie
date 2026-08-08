@@ -60,10 +60,24 @@
         },
         "gnome": {
             "include": [
+                "baobab",
                 "dconf-editor",
                 "foot",
+                "gnome-calculator",
+                "gnome-calendar",
+                "gnome-characters",
+                "gnome-clocks",
+                "gnome-contacts",
+                "gnome-extensions-app",
+                "gnome-font-viewer",
+                "gnome-logs",
+                "gnome-maps",
+                "gnome-text-editor",
                 "gnome-tweaks",
-                "loupe"
+                "gnome-weather",
+                "loupe",
+                "papers",
+                "snapshot"
             ],
             "exclude": ["gnome-software", "gnome-tour", "gnome-user-docs", "ptyxis", "yelp"]
         },
