@@ -33,10 +33,6 @@ Install=true
 Branch=stable
 Install=true
 
-[Flatpak Preinstall org.gnome.Loupe]
-Branch=stable
-Install=true
-
 [Flatpak Preinstall org.gnome.Maps]
 Branch=stable
 Install=true

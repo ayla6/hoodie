@@ -62,7 +62,8 @@
             "include": [
                 "dconf-editor",
                 "foot",
-                "gnome-tweaks"
+                "gnome-tweaks",
+                "loupe"
             ],
             "exclude": ["gnome-software", "gnome-tour", "gnome-user-docs", "ptyxis", "yelp"]
         },
