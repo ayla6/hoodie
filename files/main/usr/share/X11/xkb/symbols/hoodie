@@ -72,4 +72,6 @@ xkb_symbols "basic" {
     key <AB08> { [         h,         H, parenright, parenright, udiaeresis, Udiaeresis ] };
     key <AB09> { [     comma,      less,       less,      less,  dead_tilde,  dead_tilde ] };
     key <AB10> { [    period,   greater,    greater,  ellipsis,dead_cedilla, dead_cedilla ] };
+    // because chromium still opens menu
+    key <AB11> {[ ISO_Level5_Shift ], type[group1]="ONE_LEVEL" };
 };
