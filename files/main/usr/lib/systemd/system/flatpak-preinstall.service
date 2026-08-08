@@ -7,7 +7,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/flatpak preinstall --system
+ExecStart=/usr/bin/flatpak preinstall --system --assumeyes
 RemainAfterExit=yes
 
 [Install]

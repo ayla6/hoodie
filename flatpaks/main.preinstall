@@ -1,13 +1,5 @@
 # Media & content
-[Flatpak Preinstall org.mozilla.firefox]
-Branch=stable
-Install=true
-
 [Flatpak Preinstall com.obsproject.Studio]
-Branch=stable
-Install=true
-
-[Flatpak Preinstall io.mpv.Mpv]
 Branch=stable
 Install=true
 

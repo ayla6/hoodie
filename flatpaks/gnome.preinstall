@@ -6,3 +6,65 @@ Install=true
 [Flatpak Preinstall io.github.realmazharhussain.GdmSettings]
 Branch=stable
 Install=true
+
+# Core GNOME apps (fedora base ships these via the fedora remote; flathub refs for clean installs)
+
+[Flatpak Preinstall org.gnome.Calculator]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Calendar]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Characters]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Contacts]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Extensions]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Logs]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Loupe]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Maps]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Papers]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Snapshot]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.TextEditor]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.Weather]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.baobab]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.clocks]
+Branch=stable
+Install=true
+
+[Flatpak Preinstall org.gnome.font-viewer]
+Branch=stable
+Install=true
