@@ -51,6 +51,7 @@
                 "vulkan-tools",
                 "wget",
                 "wl-clipboard",
+                "xdg-terminal-exec",
                 "xdg-user-dirs",
                 "zoxide",
                 "zram-generator"
@@ -63,7 +64,7 @@
                 "foot",
                 "gnome-tweaks"
             ],
-            "exclude": ["gnome-software"]
+            "exclude": ["gnome-software", "gnome-tour", "gnome-user-docs", "ptyxis", "yelp"]
         },
         "kde": {
             "include": [

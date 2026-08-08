@@ -1,0 +1,4 @@
+# Default terminal for GNOME sessions (xdg-terminal-exec spec).
+# foot is preferred; it ships /usr/share/applications/foot.desktop with the
+# TerminalEmulator category and accepts `-e` for command execution.
+foot.desktop
